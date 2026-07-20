@@ -1,61 +1,61 @@
 import os
-import json
-import feedparser
-import os
+import sys
 from google import genai
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+# Initialize the Gemini client using the API key from environment variables
+api_key = os.environ.get("GEMINI_API_KEY")
 
-FEEDS = {
-    "crimen": ("Crimen Real", "https://news.google.com/rss/search?q=true+crime+investigacion&hl=es"),
-    "arqueologia": ("Arqueología", "https://news.google.com/rss/search?q=descubrimiento+arqueologico&hl=es"),
-    "mar_aire": ("Mar y Aire", "https://news.google.com/rss/search?q=misterio+maritimo+o+aviacion&hl=es"),
-    "paranormal": ("Paranormal", "https://news.google.com/rss/search?q=UAP+fenomeno+anomalo+desclasificado&hl=es")
-}
+if not api_key:
+    print("Error: La variable de entorno GEMINI_API_KEY no está configurada.")
+    sys.exit(1)
+
+client = genai.Client(api_key=api_key)
 
 def generar_expediente(cat_key, cat_nombre, url):
-    parsed = feedparser.parse(url)
-    if not parsed.entries:
-        return None
-    entry = parsed.entries[0]
-    
-    prompt = f"""
-    Eres el editor de un portal de misterio. Redacta una ficha rápida en JSON sobre esta noticia:
-    Título: {entry.title}
-    Resumen: {entry.summary}
-    
-    Responde ÚNICAMENTE en formato JSON válido con estas claves:
-    {{
-        "titulo": "Título atractivo de 8 palabras máximo",
-        "resumen": "Redacción de 3 párrafos cortos explicando el suceso con rigor.",
-        "destacado": "Una frase corta intrigante o dato impactante sobre el caso",
-        "fuente": "Nombre del medio original"
-    }}
     """
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-
-res = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=prompt
-)
-
+    Función para generar un expediente o artículo de misterio usando Gemini 2.5 Flash.
+    """
+    prompt = f"""
+    Actúa como un investigador experto en misterios, enigmas históricos y arqueología.
+    Genera un expediente detallado y atractivo para la categoría '{cat_nombre}' ({cat_key}).
+    
+    Referencia o tema de origen: {url}
+    
+    El informe debe incluir:
+    1. Título impactante.
+    2. Contexto histórico o antecedentes del suceso.
+    3. Hallazgos o evidencias principales.
+    4. Conclusión abierta o preguntas para la comunidad.
+    
+    Redacta en un estilo divulgativo, riguroso pero misterioso.
+    """
     
     try:
-        texto = res.text.replace("```json", "").replace("```", "").strip()
-        data = json.loads(texto)
-        data["categoria"] = cat_key
-        data["categoria_nombre"] = cat_nombre
-        return data
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        return response.text
     except Exception as e:
-        print(f"Error procesando {cat_key}: {e}")
+        print(f"Error al generar contenido con Gemini: {e}")
         return None
 
+def main():
+    print("Iniciando Bot de Misterios Globales...")
+    
+    # Datos de ejemplo o prueba (ajusta según tus necesidades)
+    cat_key = "arqueologia"
+    cat_nombre = "Arqueología Prohibida"
+    url = "https://misteriosglobales.com"
+    
+    expediente = generar_expediente(cat_key, cat_nombre, url)
+    
+    if expediente:
+        print("\n--- EXPEDIENTE GENERADO CON ÉXITO ---\n")
+        print(expediente)
+        print("\n------------------------------------\n")
+    else:
+        print("No se pudo generar el expediente.")
+
 if __name__ == "__main__":
-    expedientes = []
-    for cat_key, (cat_nombre, url) in FEEDS.items():
-        exp = generar_expediente(cat_key, cat_nombre, url)
-        if exp:
-            expedientes.append(exp)
-            
-    with open("noticias.json", "w", encoding="utf-8") as f:
-        json.dumps(expedientes, f, ensure_ascii=False, indent=2)
+    main()
