@@ -1,37 +1,29 @@
-name: Publicar Noticias de Misterios Globales
+name: Ejecutar Bot Misterios Globales
 
 on:
   schedule:
-    # Se ejecuta automáticamente todos los días a las 06:00 UTC
-    - cron: '0 6 * * *'
-  workflow_dispatch: # Permite ejecutarlo manualmente cuando quieras
+    - cron: '0 9 * * *'  # Ejecución diaria automática
+  workflow_dispatch:      # Permite ejecutar manualmente desde GitHub
 
 jobs:
-  build-and-publish:
+  run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Descargar código
+      - name: Descargar el código
         uses: actions/checkout@v4
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Instalar librerías
+      - name: Instalar librerías necesarias
         run: |
-          pip install feedparser google-generativeai
+          python -m pip install --upgrade pip
+          pip install google-genai
 
-      - name: Ejecutar Bot de Inteligencia Artificial
+      - name: Ejecutar bot_misterios.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          python bot_misterios.py
-
-      - name: Guardar cambios y actualizar la web
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add noticias.json
-          git commit -m "Actualización diaria de expedientes misteriosos" || exit 0
-          git pushu
+        run: python bot_misterios.py
