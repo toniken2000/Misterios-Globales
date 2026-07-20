@@ -1,7 +1,8 @@
 import os
 import json
 import feedparser
-import google.generativeai as genai
+import os
+from google input genai
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -31,8 +32,13 @@ def generar_expediente(cat_key, cat_nombre, url):
         "fuente": "Nombre del medio original"
     }}
     """
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    res = model.generate_content(prompt)
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+
+res = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=prompt
+)
+
     
     try:
         texto = res.text.replace("```json", "").replace("```", "").strip()
