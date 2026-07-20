@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misterios Globales — Expedientes y Enigmas</title>
+    <style>
+        :root { --bg: #0f1117; --card: #1a1d24; --accent: #e63946; --text: #e0e6ed; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { text-align: center; padding: 20px 0; border-bottom: 2px solid var(--accent); }
+        h1 { margin: 0; font-size: 2.2rem; letter-spacing: 2px; }
+        nav { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+        nav button { background: var(--card); border: 1px solid #333; color: white; padding: 10px 18px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        nav button:hover, nav button.active { background: var(--accent); border-color: var(--accent); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        article { background: var(--card); border-radius: 8px; padding: 20px; border-top: 4px solid var(--accent); }
+        blockquote { border-left: 3px solid var(--accent); margin: 15px 0; padding-left: 10px; font-style: italic; color: #aaa; }
+        footer { text-align: center; margin-top: 40px; color: #666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MISTERIOS GLOBALES</h1>
+        <p>Portal de investigación, arqueología y eventos no explicados</p>
+    </header>
+
+    <nav>
+        <button class="active" onclick="filtrar('todos')">Todos los expedientes</button>
+        <button onclick="filtrar('crimen')">Crimen real</button>
+        <button onclick="filtrar('arqueologia')">Arqueología</button>
+        <button onclick="filtrar('mar_aire')">Mar y aire</button>
+        <button onclick="filtrar('paranormal')">Paranormal</button>
+    </nav>
+
+    <main class="grid" id="contenedor-noticias">
+        <p>Cargando expedientes diarios...</p>
+    </main>
+
+    <footer>
+        <p>© Misterios Globales — Actualizado automáticamente</p>
+    </footer>
+
+    <script>
+        async function cargarNoticias() {
+            try {
+                const res = await fetch('noticias.json?v=' + new Date().getTime());
+                const datos = await res.json();
+                window.expedientes = datos;
+                mostrarExpedientes(datos);
+            } catch (e) {
+                document.getElementById('contenedor-noticias').innerHTML = '<p>Actualizando base de datos...</p>';
+            }
+        }
+
+        function mostrarExpedientes(lista) {
+            const cont = document.getElementById('contenedor-noticias');
+            cont.innerHTML = lista.map(item => `
+                <article class="expediente" data-cat="${item.categoria}">
+                    <small style="color:var(--accent); font-weight:bold;">${item.categoria_nombre.toUpperCase()}</small>
+                    <h2>${item.titulo}</h2>
+                    <p>${item.resumen}</p>
+                    <blockquote>"${item.destacado}"</blockquote>
+                    <p style="font-size:0.85rem; color:#888;">Fuente: ${item.fuente}</p>
+                </article>
+            `).join('');
+        }
+
+        function filtrar(cat) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            if (cat === 'todos') {
+                mostrarExpedientes(window.expedientes);
+            } else {
+                const filtrados = window.expedientes.filter(e => e.categoria === cat);
+                mostrarExpedientes(filtrados);
+            }
+        }
+
+        cargarNoticias();
+    </script>
+</body>
+</html>
