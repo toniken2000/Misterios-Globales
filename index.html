@@ -3,104 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Misterios Globales</title>
+    <title>MISTERIOS GLOBALES</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
+        body {
+            background-color: #0d0d11;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
         header {
-            background-color: #1f1f1f;
-            padding: 20px;
+            position: relative;
+            background: linear-gradient(180deg, #16161f 0%, #0d0d11 100%);
+            border-bottom: 1px solid #2a2a38;
+            padding: 40px 20px 30px 20px;
             text-align: center;
-            border-bottom: 2px solid #333;
         }
-        header h1 {
-            margin: 0;
-            color: #f39c12;
+
+        /* Selector de idioma flotante a la derecha */
+        .lang-container {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #1a1a24;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #333348;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
+
+        .lang-icon {
+            font-size: 1.1rem;
+        }
+
+        #language-select {
+            background: transparent;
+            color: #d1d5db;
+            border: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        #language-select option {
+            background-color: #1a1a24;
+            color: #ffffff;
+        }
+
+        h1 {
+            color: #f3f4f6;
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
         main {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 15px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 20px;
         }
-        .expediente {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .expediente h2 {
-            color: #f39c12;
-            margin-top: 0;
-        }
-        .expediente .fecha {
-            font-size: 0.85em;
-            color: #888;
-        }
-        footer {
+
+        .loading-box {
             text-align: center;
+            padding: 30px 40px;
+            background-color: #14141c;
+            border: 1px solid #262636;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .loading-box p {
+            color: #8b949e;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        footer {
+            background-color: #09090d;
+            border-top: 1px solid #1f1f2e;
             padding: 20px;
-            color: #666;
-            font-size: 0.9em;
+            text-align: center;
+        }
+
+        footer p {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        /* Responsive para móviles */
+        @media (max-width: 600px) {
+            header {
+                padding-top: 60px;
+            }
+            .lang-container {
+                top: 12px;
+                right: 50%;
+                transform: translateX(50%);
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            .subtitle {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>MISTERIOS GLOBALES</h1>
-        <p>Portal de investigación, arqueología y eventos no explicados</p>
+        <!-- Selector de idioma -->
+        <div class="lang-container">
+            <span class="lang-icon">🌐</span>
+            <select id="language-select" onchange="changeLanguage(this.value)">
+                <option value="es" selected>Español</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+            </select>
+        </div>
+
+        <h1 id="site-title">MISTERIOS GLOBALES</h1>
+        <p class="subtitle" id="site-subtitle">Portal de investigación, arqueología y eventos no explicados</p>
     </header>
 
-    <main id="contenedor-expedientes">
-        <p id="mensaje-carga">Cargando expedientes diarios...</p>
+    <main>
+        <div class="loading-box">
+            <p id="site-loading">Cargando expedientes diarios...</p>
+        </div>
     </main>
 
     <footer>
-        <p>© Misterios Globales — Actualizado automáticamente</p>
+        <p id="site-footer">© Misterios Globales — Actualizado automáticamente</p>
     </footer>
 
     <script>
-        // Carga el archivo JSON usando la ruta relativa corregida './'
-        fetch('./noticias.json')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('No se pudo encontrar el archivo de noticias');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const contenedor = document.getElementById('contenedor-expedientes');
-                contenedor.innerHTML = ''; // Limpia el mensaje de "Cargando..."
+        // Diccionario de traducciones de la interfaz
+        const translations = {
+            es: {
+                title: "MISTERIOS GLOBALES",
+                subtitle: "Portal de investigación, arqueología y eventos no explicados",
+                loading: "Cargando expedientes diarios...",
+                footer: "© Misterios Globales — Actualizado automáticamente"
+            },
+            en: {
+                title: "GLOBAL MYSTERIES",
+                subtitle: "Research, archaeology, and unexplained events portal",
+                loading: "Loading daily files...",
+                footer: "© Global Mysteries — Automatically updated"
+            },
+            fr: {
+                title: "MYSTÈRES GLOBAUX",
+                subtitle: "Portail de recherche, d'archéologie et d'événements inexpliqués",
+                loading: "Chargement des dossiers quotidiens...",
+                footer: "© Mystères Globaux — Mis à jour automatiquement"
+            },
+            de: {
+                title: "GLOBALE RÄTSEL",
+                subtitle: "Portal für Forschung, Archäologie und unerklärliche Ereignisse",
+                loading: "Tägliche Akten werden geladen...",
+                footer: "© Globale Rätsel — Automatisch aktualisiert"
+            }
+        };
 
-                if (data.length === 0) {
-                    contenedor.innerHTML = '<p>No hay expedientes disponibles hoy.</p>';
-                    return;
-                }
+        // Función para cambiar idioma dinámicamente
+        function changeLanguage(lang) {
+            // Guardar en almacenamiento local
+            localStorage.setItem('misterios_lang', lang);
+            document.documentElement.lang = lang;
 
-                // Genera el HTML para cada artículo del JSON
-                data.forEach(item => {
-                    const articulo = document.createElement('article');
-                    articulo.className = 'expediente';
-                    articulo.innerHTML = `
-                        <h2>${item.titulo}</h2>
-                        <p class="fecha">${item.fecha || ''}</p>
-                        <p>${item.contenido}</p>
-                    `;
-                    contenedor.appendChild(articulo);
-                });
-            })
-            .catch(error => {
-                console.error('Error al cargar expedientes:', error);
-                document.getElementById('mensaje-carga').textContent = 
-                    'Error al cargar los expedientes. Verifica que noticias.json exista en el repositorio.';
-            });
+            // Actualizar etiquetas en la vista
+            document.getElementById('site-title').innerText = translations[lang].title;
+            document.getElementById('site-subtitle').innerText = translations[lang].subtitle;
+            document.getElementById('site-loading').innerText = translations[lang].loading;
+            document.getElementById('site-footer').innerText = translations[lang].footer;
+        }
+
+        // Cargar el idioma guardado al abrir/recargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('misterios_lang') || 'es';
+            const langSelect = document.getElementById('language-select');
+            if (langSelect) {
+                langSelect.value = savedLang;
+            }
+            changeLanguage(savedLang);
+        });
     </script>
-
 </body>
 </html>
