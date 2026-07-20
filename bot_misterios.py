@@ -2,7 +2,7 @@ import os
 import json
 import feedparser
 import os
-from google input genai
+from google import genai
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
