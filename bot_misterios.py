@@ -60,4 +60,47 @@ def main():
   nuevos_expedientes = []
 
   for cat_key, cat_nombre, url in CATEGORIAS:
-    print(f"Gen
+    print(f"Generando expediente para: {cat_nombre}...")
+    texto_generado = generar_expediente(cat_key, cat_nombre, url)
+
+    if not texto_generado:
+      print(f"❌ No se pudo generar el expediente de {cat_nombre}. Se omite.")
+      continue
+
+    # Procesar la respuesta para separar título y contenido
+    titulo = f"Expediente del Día: {cat_nombre}"
+    contenido = texto_generado
+
+    if "TITULO:" in texto_generado and "CONTENIDO:" in texto_generado:
+      partes = texto_generado.split("CONTENIDO:")
+      titulo = partes[0].replace("TITULO:", "").strip()
+      contenido = partes[1].strip()
+
+    fecha_actual = datetime.now().strftime("%d/%m/%Y - %H:%M")
+
+    nuevos_expedientes.append({
+        "titulo": titulo,
+        "categoria": cat_nombre,
+        "fecha": f"Expediente registrado el {fecha_actual}",
+        "contenido": contenido.replace("\n", "<br>"),
+    })
+
+  if not nuevos_expedientes:
+    print("❌ No se generó ningún expediente nuevo en esta ejecución.")
+    return
+
+  # Añadir los nuevos expedientes al principio de la lista
+  expedientes = nuevos_expedientes + expedientes
+
+  # Mantener solo los últimos 20 expedientes para no sobrecargar la web
+  expedientes = expedientes[:20]
+
+  # GUARDAR EN EL ARCHIVO NOTICIAS.JSON
+  with open("noticias.json", "w", encoding="utf-8") as f:
+    json.dump(expedientes, f, ensure_ascii=False, indent=2)
+
+  print(f"\n✅ {len(nuevos_expedientes)} EXPEDIENTES NUEVOS GUARDADOS CON ÉXITO EN noticias.json.")
+
+
+if __name__ == "__main__":
+  main()
