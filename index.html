@@ -29,7 +29,6 @@
             text-align: center;
         }
 
-        /* Selector de idioma flotante a la derecha */
         .lang-container {
             position: absolute;
             top: 15px;
@@ -115,7 +114,67 @@
             font-size: 0.85rem;
         }
 
-        /* Responsive para móviles */
+        .expediente {
+            background-color: #14141c;
+            border: 1px solid #2a2a38;
+            border-left: 4px solid #b91c1c;
+            border-radius: 6px;
+            padding: 22px 26px;
+            margin-bottom: 22px;
+            max-width: 700px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .expediente::before {
+            content: "CLASIFICADO";
+            position: absolute;
+            top: 14px;
+            right: 18px;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: #b91c1c;
+            border: 1px solid #b91c1c;
+            padding: 2px 8px;
+            border-radius: 3px;
+            opacity: 0.7;
+            transform: rotate(3deg);
+        }
+
+        .expediente h2 {
+            color: #f3f4f6;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            padding-right: 100px;
+        }
+
+        .expediente .fecha {
+            color: #6b7280;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+            border-bottom: 1px dashed #2a2a38;
+            padding-bottom: 10px;
+        }
+
+        .expediente .contenido {
+            color: #c9c9d1;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        #expedientes-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .error-box p {
+            color: #ef4444;
+        }
+
         @media (max-width: 600px) {
             header {
                 padding-top: 60px;
@@ -131,13 +190,24 @@
             .subtitle {
                 font-size: 0.9rem;
             }
+            .expediente {
+                padding: 18px 20px;
+            }
+            .expediente h2 {
+                padding-right: 0;
+            }
+            .expediente::before {
+                position: static;
+                display: inline-block;
+                margin-bottom: 10px;
+                transform: none;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <!-- Selector de idioma -->
         <div class="lang-container">
             <span class="lang-icon">🌐</span>
             <select id="language-select" onchange="changeLanguage(this.value)">
@@ -153,8 +223,10 @@
     </header>
 
     <main>
-        <div class="loading-box">
-            <p id="site-loading">Cargando expedientes diarios...</p>
+        <div id="expedientes-container">
+            <div class="loading-box" id="loading-box">
+                <p id="site-loading">Cargando expedientes diarios...</p>
+            </div>
         </div>
     </main>
 
@@ -163,7 +235,6 @@
     </footer>
 
     <script>
-        // Diccionario de traducciones de la interfaz
         const translations = {
             es: {
                 title: "MISTERIOS GLOBALES",
@@ -191,20 +262,44 @@
             }
         };
 
-        // Función para cambiar idioma dinámicamente
         function changeLanguage(lang) {
-            // Guardar en almacenamiento local
             localStorage.setItem('misterios_lang', lang);
             document.documentElement.lang = lang;
 
-            // Actualizar etiquetas en la vista
             document.getElementById('site-title').innerText = translations[lang].title;
             document.getElementById('site-subtitle').innerText = translations[lang].subtitle;
-            document.getElementById('site-loading').innerText = translations[lang].loading;
+            const loadingEl = document.getElementById('site-loading');
+            if (loadingEl) {
+                loadingEl.innerText = translations[lang].loading;
+            }
             document.getElementById('site-footer').innerText = translations[lang].footer;
         }
 
-        // Cargar el idioma guardado al abrir/recargar la página
+        async function cargarExpedientes() {
+            const container = document.getElementById('expedientes-container');
+            try {
+                const respuesta = await fetch('noticias.json?t=' + Date.now());
+                if (!respuesta.ok) throw new Error('No se encontró noticias.json');
+                const expedientes = await respuesta.json();
+
+                if (!expedientes.length) {
+                    container.innerHTML = '<div class="loading-box"><p>No hay expedientes todavía.</p></div>';
+                    return;
+                }
+
+                container.innerHTML = expedientes.map(exp => `
+                    <div class="expediente">
+                        <h2>${exp.titulo}</h2>
+                        <div class="fecha">${exp.fecha}</div>
+                        <div class="contenido">${exp.contenido}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="loading-box error-box"><p>No se pudieron cargar los expedientes.</p></div>';
+                console.error(error);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedLang = localStorage.getItem('misterios_lang') || 'es';
             const langSelect = document.getElementById('language-select');
@@ -212,6 +307,7 @@
                 langSelect.value = savedLang;
             }
             changeLanguage(savedLang);
+            cargarExpedientes();
         });
     </script>
 </body>
