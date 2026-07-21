@@ -45,6 +45,36 @@ def generar_expediente(cat_key, cat_nombre, url):
     return None
 
 
+def generar_imagen(cat_nombre, titulo, cat_key):
+  """Genera una imagen ilustrativa para el expediente y la guarda en la carpeta imagenes/."""
+  prompt_imagen = (
+      f"Ilustración fotorrealista, atmosférica y cinematográfica para un expediente "
+      f"de investigación titulado '{titulo}', sobre la categoría '{cat_nombre}'. "
+      f"Estilo misterioso, tonos oscuros, sin texto ni letras visibles en la imagen."
+  )
+
+  try:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-image",
+        contents=prompt_imagen,
+    )
+
+    for part in response.candidates[0].content.parts:
+      if getattr(part, "inline_data", None) is not None:
+        os.makedirs("imagenes", exist_ok=True)
+        nombre_archivo = f"{cat_key}_{int(datetime.now().timestamp())}.png"
+        ruta_relativa = f"imagenes/{nombre_archivo}"
+        with open(ruta_relativa, "wb") as f:
+          f.write(part.inline_data.data)
+        return ruta_relativa
+
+    print(f"⚠️ La respuesta de imagen para '{cat_nombre}' no incluyó datos de imagen.")
+    return None
+  except Exception as e:
+    print(f"Error al generar imagen para '{cat_nombre}': {e}")
+    return None
+
+
 def main():
   print("=== Iniciando Bot de Misterios Globales ===")
 
@@ -76,6 +106,9 @@ def main():
       titulo = partes[0].replace("TITULO:", "").strip()
       contenido = partes[1].strip()
 
+    print(f"Generando imagen para: {cat_nombre}...")
+    ruta_imagen = generar_imagen(cat_nombre, titulo, cat_key)
+
     fecha_actual = datetime.now().strftime("%d/%m/%Y - %H:%M")
 
     nuevos_expedientes.append({
@@ -83,6 +116,7 @@ def main():
         "categoria": cat_nombre,
         "fecha": f"Expediente registrado el {fecha_actual}",
         "contenido": contenido.replace("\n", "<br>"),
+        "imagen": ruta_imagen,
     })
 
   if not nuevos_expedientes:
