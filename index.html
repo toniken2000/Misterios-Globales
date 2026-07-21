@@ -148,6 +148,14 @@
             padding-right: 100px;
         }
 
+        .expediente img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            display: block;
+        }
+
         .expediente .fecha {
             color: #6b7280;
             font-size: 0.8rem;
@@ -240,27 +248,116 @@
                 title: "MISTERIOS GLOBALES",
                 subtitle: "Portal de investigación, arqueología y eventos no explicados",
                 loading: "Cargando expedientes diarios...",
+                translating: "Traduciendo expedientes...",
+                empty: "No hay expedientes todavía.",
+                error: "No se pudieron cargar los expedientes.",
                 footer: "© Misterios Globales — Actualizado automáticamente"
             },
             en: {
                 title: "GLOBAL MYSTERIES",
                 subtitle: "Research, archaeology, and unexplained events portal",
                 loading: "Loading daily files...",
+                translating: "Translating files...",
+                empty: "No files yet.",
+                error: "Files could not be loaded.",
                 footer: "© Global Mysteries — Automatically updated"
             },
             fr: {
                 title: "MYSTÈRES GLOBAUX",
                 subtitle: "Portail de recherche, d'archéologie et d'événements inexpliqués",
                 loading: "Chargement des dossiers quotidiens...",
+                translating: "Traduction des dossiers...",
+                empty: "Aucun dossier pour le moment.",
+                error: "Impossible de charger les dossiers.",
                 footer: "© Mystères Globaux — Mis à jour automatiquement"
             },
             de: {
                 title: "GLOBALE RÄTSEL",
                 subtitle: "Portal für Forschung, Archäologie und unerklärliche Ereignisse",
                 loading: "Tägliche Akten werden geladen...",
+                translating: "Akten werden übersetzt...",
+                empty: "Noch keine Akten vorhanden.",
+                error: "Akten konnten nicht geladen werden.",
                 footer: "© Globale Rätsel — Automatisch aktualisiert"
             }
         };
+
+        const codigosApi = { en: 'en', fr: 'fr', de: 'de' };
+
+        let expedientesOriginales = [];
+        const cacheTraducciones = {};
+
+        async function traducirTexto(texto, langDestino) {
+            const idioma = codigosApi[langDestino];
+            if (!idioma || !texto) return texto;
+
+            const trozos = texto.match(/.{1,450}(\s|$)/g) || [texto];
+            const resultado = [];
+
+            for (const trozo of trozos) {
+                try {
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trozo)}&langpair=es|${idioma}`;
+                    const respuesta = await fetch(url);
+                    const datos = await respuesta.json();
+                    resultado.push(datos?.responseData?.translatedText || trozo);
+                } catch (error) {
+                    resultado.push(trozo);
+                }
+            }
+            return resultado.join(' ');
+        }
+
+        async function obtenerExpedientesEnIdioma(lang) {
+            if (lang === 'es') return expedientesOriginales;
+            if (cacheTraducciones[lang]) return cacheTraducciones[lang];
+
+            const traducidos = [];
+            for (const exp of expedientesOriginales) {
+                const tituloTraducido = await traducirTexto(exp.titulo, lang);
+                const contenidoPlano = exp.contenido.replace(/<br\s*\/?>/g, '\n');
+                const contenidoTraducido = await traducirTexto(contenidoPlano, lang);
+
+                traducidos.push({
+                    ...exp,
+                    titulo: tituloTraducido,
+                    contenido: contenidoTraducido.replace(/\n/g, '<br>')
+                });
+            }
+
+            cacheTraducciones[lang] = traducidos;
+            return traducidos;
+        }
+
+        function pintarExpedientes(expedientes, lang) {
+            const container = document.getElementById('expedientes-container');
+
+            if (!expedientes.length) {
+                container.innerHTML = `<div class="loading-box"><p>${translations[lang].empty}</p></div>`;
+                return;
+            }
+
+            container.innerHTML = expedientes.map(exp => `
+                <div class="expediente">
+                    ${exp.imagen ? `<img src="${exp.imagen}" alt="${exp.titulo}">` : ''}
+                    <h2>${exp.titulo}</h2>
+                    <div class="fecha">${exp.fecha}</div>
+                    <div class="contenido">${exp.contenido}</div>
+                </div>
+            `).join('');
+        }
+
+        async function renderExpedientes(lang) {
+            if (!expedientesOriginales.length) return;
+
+            const container = document.getElementById('expedientes-container');
+
+            if (lang !== 'es' && !cacheTraducciones[lang]) {
+                container.innerHTML = `<div class="loading-box"><p>${translations[lang].translating}</p></div>`;
+            }
+
+            const expedientes = await obtenerExpedientesEnIdioma(lang);
+            pintarExpedientes(expedientes, lang);
+        }
 
         function changeLanguage(lang) {
             localStorage.setItem('misterios_lang', lang);
@@ -273,6 +370,8 @@
                 loadingEl.innerText = translations[lang].loading;
             }
             document.getElementById('site-footer').innerText = translations[lang].footer;
+
+            renderExpedientes(lang);
         }
 
         async function cargarExpedientes() {
@@ -280,22 +379,13 @@
             try {
                 const respuesta = await fetch('noticias.json?t=' + Date.now());
                 if (!respuesta.ok) throw new Error('No se encontró noticias.json');
-                const expedientes = await respuesta.json();
+                expedientesOriginales = await respuesta.json();
 
-                if (!expedientes.length) {
-                    container.innerHTML = '<div class="loading-box"><p>No hay expedientes todavía.</p></div>';
-                    return;
-                }
-
-                container.innerHTML = expedientes.map(exp => `
-                    <div class="expediente">
-                        <h2>${exp.titulo}</h2>
-                        <div class="fecha">${exp.fecha}</div>
-                        <div class="contenido">${exp.contenido}</div>
-                    </div>
-                `).join('');
+                const savedLang = localStorage.getItem('misterios_lang') || 'es';
+                await renderExpedientes(savedLang);
             } catch (error) {
-                container.innerHTML = '<div class="loading-box error-box"><p>No se pudieron cargar los expedientes.</p></div>';
+                const savedLang = localStorage.getItem('misterios_lang') || 'es';
+                container.innerHTML = `<div class="loading-box error-box"><p>${translations[savedLang].error}</p></div>`;
                 console.error(error);
             }
         }
@@ -306,7 +396,11 @@
             if (langSelect) {
                 langSelect.value = savedLang;
             }
-            changeLanguage(savedLang);
+            document.documentElement.lang = savedLang;
+            document.getElementById('site-title').innerText = translations[savedLang].title;
+            document.getElementById('site-subtitle').innerText = translations[savedLang].subtitle;
+            document.getElementById('site-footer').innerText = translations[savedLang].footer;
+
             cargarExpedientes();
         });
     </script>
