@@ -29,7 +29,7 @@ def generar_expediente(cat_key, cat_nombre, url):
 
   try:
     response = client.models.generate_content(
-        model="gemini-2.5-flash", contents=prompt
+        model="gemini-flash-latest", contents=prompt
     )
     return response.text
   except Exception as e:
